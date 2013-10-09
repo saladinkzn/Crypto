@@ -87,7 +87,7 @@ public class Program {
         final int f0 = pPht[0] ^ roundKeys2r_8_2r_9[0];
         final int f1 = pPht[1] ^ roundKeys2r_8_2r_9[1];
         //
-        int c2 = (f0 ^ input[2]) >>> 1;
+        int c2 = Integer.rotateRight((f0 ^ input[2]), 1);
         int c3 = (f1 ^ ROL(input[3], 1));
         //
         return new int[] {c2, c3, f0, f1};
@@ -104,37 +104,36 @@ public class Program {
         final int f1 = pPht[1] ^ roundKeys[1];
         //
         final int p2 = ROL(f0 ^ input[2], 1);
-        final int p3 = (f1 ^ (input[3] >>> 1));
+        final int p3 = (f1 ^ Integer.rotateRight(input[3], 1));
         //
         return new int[] {p2, p3, f0, f1};
 
     }
 
     private static int ROL(int value, int positions) {
-        return value >>> (32 - positions);
+        return Integer.rotateLeft(value, positions);
     }
 
     public static int[] pht(int a, int b) {
-        int a1 = (int)((long)a +(long)b);
-        int b1 = (int)((long)a + 2*(long)b);
+        final long unsignedA = (long) a & 0xFFFFFFFFL;
+        final long unsignedB = (long) b & 0xFFFFFFFFL;
+        int a1 = (int)(unsignedA + unsignedB);
+        int b1 = (int)(unsignedA + 2 * unsignedB);
         return new int[] {a1, b1};
     }
 
     public static int h(int input, int l0, int l1) {
         Galua256 galua256 = new Galua256((byte)0b01101001);
-        final byte[] input2 = asBytes(input);
-        final byte[] input3 = new byte[] { q0(input2[0]), q1(input2[1]), q0(input2[2]), q1(input2[3])};
-        final int input4 = fromBytes(input3);
-        final int input5 = input4 ^ l1;
-        final byte[] input6 = asBytes(input5);
-        final byte[] input7 = new byte[] { q0(input6[0]), q0(input6[1]), q1(input6[2]), q1(input6[3])};
-        final int input8 = fromBytes(input7);
-        final int input9 = input8 ^ l0;
-        final byte[] input10 = asBytes(input9);
-        final byte[] input11 = new byte[] { q1(input10[0]), q0(input10[1]), q1(input10[2]), q0(input10[3]) };
-        final byte[] input12 = multiply(galua256, MDS, input11);
-        final int input13 = fromBytes(input12);
-        return input13;
+        final byte[] x = asBytes(input);
+        final byte[] y = asBytes(l1);
+        final byte[] z = asBytes(l0);
+        final byte[] input11 = new byte[] {
+            q1((byte)(q0((byte) (q0(x[0]) ^ y[0])) ^ z[0])),
+            q0((byte)(q0((byte) (q1(x[1]) ^ y[1])) ^ z[1])),
+            q1((byte)(q1((byte) (q0(x[2]) ^ y[2])) ^ z[2])),
+            q0((byte)(q1((byte) (q1(x[3]) ^ y[3])) ^ z[3])),
+        };
+        return fromBytes(multiply(galua256, MDS, input11));
     }
 
     private static final byte[] t00 = { 0x8, 0x1, 0x7, 0xD, 0x6, 0xF, 0x3, 0x2, 0x0, 0xB, 0x5, 0x9, 0xE, 0xC, 0xA, 0x4};
@@ -155,38 +154,38 @@ public class Program {
     };
 
     public static final byte[][] MDS = new byte[][] {
-            new byte[] { 0x01, (byte)0xEF, 0x5B, 0x5B},
-            new byte[] { 0x5B, (byte)0xEF, (byte)0xEF, 0x01},
-            new byte[] { (byte)0xEF, 0x5B, 0x01, (byte)0xEF},
-            new byte[] { (byte)0xEF, 0x01, (byte)0xEF, 0x5B},
+            new byte[] { (byte)0x01, (byte)0xEF, (byte)0x5B, (byte)0x5B},
+            new byte[] { (byte)0x5B, (byte)0xEF, (byte)0xEF, (byte)0x01},
+            new byte[] { (byte)0xEF, (byte)0x5B, (byte)0x01, (byte)0xEF},
+            new byte[] { (byte)0xEF, (byte)0x01, (byte)0xEF, (byte)0x5B},
     };
 
     public static byte q0(byte input) {
-        byte a0 = (byte)(input >> 4);
+        byte a0 = (byte)((input >> 4) & 0xF);
         byte b0 = (byte)(input & 0xF);
         byte a1 = (byte)(a0 ^ b0);
         byte b1 = (byte)(a0 ^ ((b0 & 1) << 3 | b0 >> 1) ^ ((8*a0) & 0xF));
-        byte a2 = t00[a1 < 0 ? 16 + a1 : 0];
-        byte b2 = t01[b1 < 0 ? 16 + b1 : 0] ;
+        byte a2 = t00[a1];
+        byte b2 = t01[b1] ;
         byte a3 = (byte)(a2 ^ b2);
         byte b3 = (byte)(a2 ^ ((b2 & 1) << 3 | b2 >> 1) ^ ((8*a2) & 0xF));
-        byte a4 = t02[a3 < 0 ? 16 + a3 : 0];
-        byte b4 = t03[b3 < 0 ? 16 + b3 : 0];
+        byte a4 = t02[a3];
+        byte b4 = t03[b3];
         return (byte)((b4 << 4) | a4);
     }
 
     public static byte q1(byte input) {
-        byte a0 = (byte)(input >> 4);
+        byte a0 = (byte)((input >> 4) & 0xF);
         byte b0 = (byte)(input & 0xF);
         byte a1 = (byte)(a0 ^ b0);
         byte b1 = (byte)(a0 ^ ((b0 & 1) << 3 | b0 >> 1) ^ ((8*a0) & 0xF));
-        byte a2 = t10[a1 < 0 ? 16 + a1 : 0];
-        byte b2 = t11[b1 < 0 ? 16 + b1 : 0];
+        byte a2 = t10[a1];
+        byte b2 = t11[b1];
         byte a3 = (byte)(a2 ^ b2);
         byte b3 = (byte)(a2 ^ ((b2 & 1) << 3 | b2 >> 1) ^ ((8*a2) & 0xF));
-        byte a4 = t12[a3 < 0 ? 16 + a3 : 0];
-        byte b4 = t13[b3 < 0 ? 16 + b3 : 0];
-        return (byte)((b4 << 4)+a4);
+        byte a4 = t12[a3];
+        byte b4 = t13[b3];
+        return (byte)((b4 << 4) | a4);
     }
 
     public static int[] getS(int[] key) {
@@ -238,17 +237,18 @@ public class Program {
         final int rho = (1 << 24) | (1 << 16) | (1 << 8) | 1;
         final int Ai = h(2 * round * rho, Me[0], Me[1]);
         final int Bi = ROL(h((2 * round + 1) * rho, Mo[0], Mo[1]), 8);
-        final int K2i = (int)((long)Ai + (long)Bi);
-        final int K2i_1 = ROL((int) ((long) Ai + 2 * (long) Bi), 9);
+        final int[] pPht = pht(Ai, Bi);
+        final int K2i = pPht[0];
+        final int K2i_1 = ROL(pPht[1], 9);
         return new int[] { K2i, K2i_1};
     }
 
     public static byte[] asBytes(int intValue) {
         return new byte[] {
                 (byte)(intValue),
-                (byte)(intValue >> 8),
-                (byte)(intValue >> 16),
-                (byte)(intValue >> 24),
+                (byte)(intValue >>> 8),
+                (byte)(intValue >>> 16),
+                (byte)(intValue >>> 24),
         };
     }
 
