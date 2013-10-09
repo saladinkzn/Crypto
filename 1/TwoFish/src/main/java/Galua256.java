@@ -20,10 +20,10 @@ public class Galua256 {
     }
 
     public byte multiply(byte a, byte b) {
-        int p = 0;
+        byte p = 0;
 
         for(int i = 0; i < 8; i++) {
-            if((b & 1) == 1) {
+            if((b & 1) != 0) {
                 p ^= a;
             }
             byte carry = (byte)(a & 0x80);
@@ -33,6 +33,6 @@ public class Galua256 {
             }
             b >>= 1;
         }
-        return (byte)p;
+        return p;
     }
 }

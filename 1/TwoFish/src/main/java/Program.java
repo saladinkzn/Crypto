@@ -3,11 +3,30 @@
  */
 public class Program {
     public static void main(String[] args) {
-        int[] plainText = new int[] {0x01234567,0x90ABCDEF, 0x01234567,0x09ABCDEF };
-        int[] key = new int[] {0x01234567,0x90ABCDEF, 0x01234567,0x09ABCDEF };
+        int[] plainText = new int[] {0x0C0D0E0F, 0x08090A0B, 0x04050607, 0x00010203 };
+        int[] key = new int[] {0x0C0D0E0F, 0x08090A0B, 0x04050607, 0x00010203 };
         //
-        int[] whitened = encrypt(plainText, key);
-        System.out.println(whitened);
+        printHexString(plainText);
+        //
+        for(int i = 0; i < plainText.length; i++) {
+            System.out.print(plainText[i] + (i != plainText.length - 1 ? " " : "\n"));
+        }
+        //
+        int[] encrypted = encrypt(plainText, key);
+        for(int i = 0; i < encrypted.length; i++) {
+            System.out.print(encrypted[i] + (i != encrypted.length - 1 ? " " : "\n"));
+        }
+        int[] decrypted = decrypt(encrypted, key);
+        for(int i = 0; i < decrypted.length; i++) {
+            System.out.print(decrypted[i] + (i != decrypted.length - 1 ? " " : "\n"));
+        }
+    }
+
+    public static void printHexString(int[] plainText) {
+        for(int i = 3; i >= 0; i--) {
+            System.out.print(String.format("%H", plainText[i]));
+        }
+        System.out.println();
     }
 
     private static int[] encrypt(int[] plainText, int[] key) {
@@ -17,6 +36,7 @@ public class Program {
         final int[] roundKey67 = roundKeys(key, 3);
         // whitening
         int[] whitened = whitening(plainText, key, roundKey01[0], roundKey01[1], roundKey23[0], roundKey23[1]);
+        printHexString(whitened);
         //
         for(int i = 0; i < 16; i++) {
             whitened = encryptionRound(whitened, key, i);
@@ -33,7 +53,7 @@ public class Program {
         // whitening
         int[] whitened = whitening(cypheredText, key, roundKey45[0], roundKey45[1], roundKey67[0], roundKey67[1]);
         //
-        for(int i = 16; i < 0; i++) {
+        for(int i = 15; i >= 0; i--) {
             whitened = decryptionRound(whitened, key, i);
         }
         whitened = whitening(whitened, key, roundKey01[0], roundKey01[1], roundKey23[0], roundKey23[1]);
@@ -59,9 +79,9 @@ public class Program {
 
     public static int[] encryptionRound(int[] input, int[] key, int round) {
         final int[] s = getS(key);
-        int p0 = h(input[0], s[0], s[1]);
-        int p1 = h(ROL(input[1], 8), s[0], s[1]);
-        int[] pPht = pht(p0, p1);
+        int t0 = h(input[0], s[0], s[1]);
+        int t1 = h(ROL(input[1], 8), s[0], s[1]);
+        int[] pPht = pht(t0, t1);
         final int[] roundKeys2r_8_2r_9 = roundKeys(key, round + 4);
         //
         final int f0 = pPht[0] ^ roundKeys2r_8_2r_9[0];
@@ -74,7 +94,20 @@ public class Program {
     }
 
     public static int[] decryptionRound(int[] input, int[] key, int round) {
-        throw new UnsupportedOperationException();
+        final int[] s = getS(key);
+        int t0 = h(input[0], s[0], s[1]);
+        int t1 = h(ROL(input[1], 8), s[0], s[1]);
+        final int[] pPht = pht(t0, t1);
+        final int[] roundKeys = roundKeys(key, round + 4);
+        //
+        final int f0 = pPht[0] ^ roundKeys[0];
+        final int f1 = pPht[1] ^ roundKeys[1];
+        //
+        final int p2 = ROL(f0 ^ input[2], 1);
+        final int p3 = (f1 ^ (input[3] >>> 1));
+        //
+        return new int[] {p2, p3, f0, f1};
+
     }
 
     private static int ROL(int value, int positions) {
@@ -100,7 +133,8 @@ public class Program {
         final byte[] input10 = asBytes(input9);
         final byte[] input11 = new byte[] { q1(input10[0]), q0(input10[1]), q1(input10[2]), q0(input10[3]) };
         final byte[] input12 = multiply(galua256, MDS, input11);
-        return fromBytes(input12);
+        final int input13 = fromBytes(input12);
+        return input13;
     }
 
     private static final byte[] t00 = { 0x8, 0x1, 0x7, 0xD, 0x6, 0xF, 0x3, 0x2, 0x0, 0xB, 0x5, 0x9, 0xE, 0xC, 0xA, 0x4};
@@ -114,10 +148,10 @@ public class Program {
     private static final byte[] t13 = { 0xB, 0x9, 0x5, 0x1, 0xC, 0x3, 0xD, 0xE, 0x6, 0x4, 0x7, 0xF, 0x2, 0x0, 0x8, 0xA};
 
     public static final byte[][] RS = new byte[][] {
-            new byte[] { 0x01, 0x04, 0x55, (byte)0x87, 0x5A, 0x58, (byte)0xDB, (byte)0x9E},
-            new byte[] { (byte)0xA4, 0x56, (byte)0x82, (byte)0xF3, 0x1E, (byte)0xC6, (byte)0x68, (byte)0xE5},
-            new byte[] { 0x02, (byte)0xA1, (byte)0xFC, (byte)0xC1, 0x47, (byte)0xAE, (byte)0x3D, (byte)0x19},
-            new byte[] { (byte)0xA4, 0x55, (byte)0x87, (byte)0x5A, 0x58, (byte)0xDB, (byte)0x9E, 0x03}
+            new byte[] { (byte)0x01, (byte)0xA4, (byte)0x55, (byte)0x87, (byte)0x5A, (byte)0x58, (byte)0xDB, (byte)0x9E},
+            new byte[] { (byte)0xA4, (byte)0x56, (byte)0x82, (byte)0xF3, (byte)0x1E, (byte)0xC6, (byte)0x68, (byte)0xE5},
+            new byte[] { (byte)0x02, (byte)0xA1, (byte)0xFC, (byte)0xC1, (byte)0x47, (byte)0xAE, (byte)0x3D, (byte)0x19},
+            new byte[] { (byte)0xA4, (byte)0x55, (byte)0x87, (byte)0x5A, (byte)0x58, (byte)0xDB, (byte)0x9E, (byte)0x03}
     };
 
     public static final byte[][] MDS = new byte[][] {
@@ -131,28 +165,28 @@ public class Program {
         byte a0 = (byte)(input >> 4);
         byte b0 = (byte)(input & 0xF);
         byte a1 = (byte)(a0 ^ b0);
-        byte b1 = (byte)(a0 ^ (b0 >>> 4) ^ 8*(a0 & 0xF));
-        byte a2 = t00[a1];
-        byte b2 = t01[b1];
+        byte b1 = (byte)(a0 ^ ((b0 & 1) << 3 | b0 >> 1) ^ ((8*a0) & 0xF));
+        byte a2 = t00[a1 < 0 ? 16 + a1 : 0];
+        byte b2 = t01[b1 < 0 ? 16 + b1 : 0] ;
         byte a3 = (byte)(a2 ^ b2);
-        byte b3 = (byte)(a2 ^ (b2 >>> 4) ^ 8*(a2 & 0xF));
-        byte a4 = t02[a3];
-        byte b4 = t03[b3];
-        return (byte)(16*b4+a4);
+        byte b3 = (byte)(a2 ^ ((b2 & 1) << 3 | b2 >> 1) ^ ((8*a2) & 0xF));
+        byte a4 = t02[a3 < 0 ? 16 + a3 : 0];
+        byte b4 = t03[b3 < 0 ? 16 + b3 : 0];
+        return (byte)((b4 << 4) | a4);
     }
 
     public static byte q1(byte input) {
         byte a0 = (byte)(input >> 4);
         byte b0 = (byte)(input & 0xF);
         byte a1 = (byte)(a0 ^ b0);
-        byte b1 = (byte)(a0 ^ (b0 >>> 4) ^ 8*(a0 & 0xF));
-        byte a2 = t10[a1];
-        byte b2 = t11[b1];
+        byte b1 = (byte)(a0 ^ ((b0 & 1) << 3 | b0 >> 1) ^ ((8*a0) & 0xF));
+        byte a2 = t10[a1 < 0 ? 16 + a1 : 0];
+        byte b2 = t11[b1 < 0 ? 16 + b1 : 0];
         byte a3 = (byte)(a2 ^ b2);
-        byte b3 = (byte)(a2 ^ (b2 >>> 4) ^ 8*(a2 & 0xF));
-        byte a4 = t12[a3];
-        byte b4 = t13[b3];
-        return (byte)(16*b4+a4);
+        byte b3 = (byte)(a2 ^ ((b2 & 1) << 3 | b2 >> 1) ^ ((8*a2) & 0xF));
+        byte a4 = t12[a3 < 0 ? 16 + a3 : 0];
+        byte b4 = t13[b3 < 0 ? 16 + b3 : 0];
+        return (byte)((b4 << 4)+a4);
     }
 
     public static int[] getS(int[] key) {
@@ -177,9 +211,7 @@ public class Program {
         Galua256 galua = new Galua256((byte)0b01001101);
         //
         byte[] S = multiply(galua, matrix, XY);
-        int S0 = 0;
-        for(int i = 0; i < 4; i++) { S0 |= (S[i] << i * 8); }
-        return S0;
+        return fromBytes(S);
     }
 
     private static byte[] multiply(Galua256 galua, byte[][] matrix, byte[] vector) {
@@ -187,7 +219,7 @@ public class Program {
         for(int i = 0; i < matrix.length; i++) {
             final byte[] RSrow = matrix[i];
             S[i] = galua.multiply(RSrow[0], vector[0]);
-            for(int j = 1; j < RSrow.length; i++) {
+            for(int j = 1; j < RSrow.length; j++) {
                 S[i] = galua.add(S[i], galua.multiply(RSrow[j], vector[j]));
             }
         }
@@ -203,7 +235,7 @@ public class Program {
         final int[] Me = new int[] { m0, m2};
         final int[] Mo = new int[] { m1, m3};
         //
-        final int rho = 1 << 24 | 1 << 16 | 1 << 8 | 1;
+        final int rho = (1 << 24) | (1 << 16) | (1 << 8) | 1;
         final int Ai = h(2 * round * rho, Me[0], Me[1]);
         final int Bi = ROL(h((2 * round + 1) * rho, Mo[0], Mo[1]), 8);
         final int K2i = (int)((long)Ai + (long)Bi);
@@ -213,17 +245,17 @@ public class Program {
 
     public static byte[] asBytes(int intValue) {
         return new byte[] {
-                (byte)(intValue >> 24),
-                (byte)(intValue >> 16),
+                (byte)(intValue),
                 (byte)(intValue >> 8),
-                (byte)(intValue)
+                (byte)(intValue >> 16),
+                (byte)(intValue >> 24),
         };
     }
 
     public static int fromBytes(byte[] bytes) {
         int S0 = 0;
         for(int i = 0; i < 4; i++) {
-            S0 |= (bytes[i] << i * 8);
+            S0 |= ((0xFF & bytes[i]) << (i * 8));
         }
         return S0;
     }
