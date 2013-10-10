@@ -19,9 +19,8 @@ public class Program {
         System.out.println();
 
         int[] decrypted = decrypt(encrypted, key);
-        for(int i = decrypted.length - 1; i >= 0; i--) {
-            System.out.print(String.format("%H", decrypted[i]));
-        }
+        System.out.println("Decrypted:");
+        printInput(decrypted);
     }
 
     public static void printInput(int[] plainText) {
@@ -50,13 +49,13 @@ public class Program {
             if(i % 2 == 0) {
                 printInternal(whitened);
             }
-            if (i != 15) {
-                whitened = new int[] {whitened[2], whitened[3], whitened[0], whitened[1]};
-            }
+            whitened = new int[] {whitened[2], whitened[3], whitened[0], whitened[1]};
             if(i % 2 != 0) {
                 printInternal(whitened);
             }
         }
+        // Swapping
+        whitened = new int[] {whitened[2], whitened[3], whitened[0], whitened[1]};
         whitened = whitening(whitened, roundKey45[0], roundKey45[1], roundKey67[0], roundKey67[1]);
         return whitened;
     }
@@ -80,20 +79,21 @@ public class Program {
         System.out.println("Whitened:");
         printInternal(whitened);
         //
+        whitened = new int[] {whitened[2], whitened[3], whitened[0], whitened[1]};
         for(int i = 15; i >= 0; i--) {
             whitened = decryptionRound(whitened, key, i);
             System.out.println("R"+ (i + 1) + ":");
-            if(i % 2 != 0) {
+            if(i % 2 == 0) {
                 printInternal(whitened);
             }
-            if (i != 0) {
-                whitened = new int[] {whitened[2], whitened[3], whitened[0], whitened[1]};
-            }
-            if(i % 2 == 0) {
+            whitened = new int[] {whitened[2], whitened[3], whitened[0], whitened[1]};
+            if(i % 2 != 0) {
                 printInternal(whitened);
             }
         }
         whitened = whitening(whitened, roundKey01[0], roundKey01[1], roundKey23[0], roundKey23[1]);
+        System.out.println("Whitened:");
+        printInternal(whitened);
         return whitened;
 
     }
@@ -125,18 +125,18 @@ public class Program {
 
     public static int[] decryptionRound(int[] input, int[] key, int round) {
         final int[] s = getS(key);
-        int t0 = h(input[0],                        s[1], s[0]);
-        int t1 = h(Integer.rotateRight(input[1], 8), s[1], s[0]);
+        int t0 = h(input[2],                        s[1], s[0]);
+        int t1 = h(Integer.rotateLeft(input[3], 8), s[1], s[0]);
         final int[] pPht = pht(t0, t1);
         final int[] roundKeys = roundKeys(key, round + 4);
         //
-        final int f0 = pPht[0] ^ roundKeys[0];
-        final int f1 = pPht[1] ^ roundKeys[1];
+        final int f0 = pPht[0] + roundKeys[0];
+        final int f1 = pPht[1] + roundKeys[1];
         //
-        final int p2 = Integer.rotateLeft(f0 ^ input[2], 1);
-        final int p3 = (f1 ^ Integer.rotateRight(input[3], 1));
+        final int p2 = Integer.rotateLeft(input[0], 1) ^ f0;
+        final int p3 = Integer.rotateRight(input[1] ^ f1, 1);
         //
-        return new int[] {p2, p3, f0, f1};
+        return new int[] {  p2, p3, input[2], input[3]};
 
     }
 
