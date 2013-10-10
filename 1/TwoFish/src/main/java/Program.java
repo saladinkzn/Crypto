@@ -3,28 +3,32 @@
  */
 public class Program {
     public static void main(String[] args) {
-        int[] plainText = new int[] {0x0C0D0E0F, 0x08090A0B, 0x04050607, 0x00010203 };
-        int[] key = new int[] {0x0C0D0E0F, 0x08090A0B, 0x04050607, 0x00010203 };
-        //
-        printHexString(plainText);
-        //
-        for(int i = 0; i < plainText.length; i++) {
-            System.out.print(plainText[i] + (i != plainText.length - 1 ? " " : "\n"));
+        int[] plainText = new int[] {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,0x07,0x08,0x09,0x0A, 0x0B,0x0C, 0x0D, 0x0E, 0x0F};//new int[] {0x03020100, 0x07060504, 0x0B0A0908, 0x0F0E0D0C };
+        int[] p = new int[4];
+        for(int i = 0; i < 4; i++) {
+            p[i] = plainText[4*i] + 256*plainText[4*i+1] + (plainText[4*i+2] << 16) + (plainText[4*i+3] << 24);
         }
+        printInput(p);
+        int[] key = p;
+        printInput(key);
         //
-        int[] encrypted = encrypt(plainText, key);
-        for(int i = 0; i < encrypted.length; i++) {
-            System.out.print(encrypted[i] + (i != encrypted.length - 1 ? " " : "\n"));
-        }
+        int[] encrypted = encrypt(p, key);
+        //
+        System.out.println("Encrypted:");;
+        printInput(encrypted);
+        System.out.println();
+
         int[] decrypted = decrypt(encrypted, key);
-        for(int i = 0; i < decrypted.length; i++) {
-            System.out.print(decrypted[i] + (i != decrypted.length - 1 ? " " : "\n"));
+        for(int i = decrypted.length - 1; i >= 0; i--) {
+            System.out.print(String.format("%H", decrypted[i]));
         }
     }
 
-    public static void printHexString(int[] plainText) {
-        for(int i = 3; i >= 0; i--) {
-            System.out.print(String.format("%H", plainText[i]));
+    public static void printInput(int[] plainText) {
+        for(int i = 0; i <= 3; i++) {
+            for(byte b  : asBytes(plainText[i])) {
+                System.out.print(String.format("%02X", b));
+            }
         }
         System.out.println();
     }
@@ -35,40 +39,66 @@ public class Program {
         final int[] roundKey45 = roundKeys(key, 2);
         final int[] roundKey67 = roundKeys(key, 3);
         // whitening
-        int[] whitened = whitening(plainText, key, roundKey01[0], roundKey01[1], roundKey23[0], roundKey23[1]);
-        printHexString(whitened);
+        int[] whitened = whitening(plainText, roundKey01[0], roundKey01[1], roundKey23[0], roundKey23[1]);
+        //
+        System.out.println("whitened:");
+        printInternal(whitened);
         //
         for(int i = 0; i < 16; i++) {
             whitened = encryptionRound(whitened, key, i);
+            System.out.println("R"+i + ":");
+            if(i % 2 == 0) {
+                printInternal(whitened);
+            }
+            if (i != 15) {
+                whitened = new int[] {whitened[2], whitened[3], whitened[0], whitened[1]};
+            }
+            if(i % 2 != 0) {
+                printInternal(whitened);
+            }
         }
-        whitened = whitening(whitened, key, roundKey45[0], roundKey45[1], roundKey67[0], roundKey67[1]);
+        whitened = whitening(whitened, roundKey45[0], roundKey45[1], roundKey67[0], roundKey67[1]);
         return whitened;
     }
 
+    private static void printInternal(int[] whitened) {
+        for(int whitenedEntry : whitened) {
+            System.out.print(String.format("%02X", whitenedEntry));
+        }
+        System.out.println();
+    }
+
     public static int[] decrypt(int[] cypheredText, int[] key) {
+        System.out.println("Cyphered text:");
+        printInput(cypheredText);
         final int[] roundKey01 = roundKeys(key, 0);
         final int[] roundKey23 = roundKeys(key, 1);
         final int[] roundKey45 = roundKeys(key, 2);
         final int[] roundKey67 = roundKeys(key, 3);
         // whitening
-        int[] whitened = whitening(cypheredText, key, roundKey45[0], roundKey45[1], roundKey67[0], roundKey67[1]);
+        int[] whitened = whitening(cypheredText, roundKey45[0], roundKey45[1], roundKey67[0], roundKey67[1]);
+        System.out.println("Whitened:");
+        printInternal(whitened);
         //
         for(int i = 15; i >= 0; i--) {
             whitened = decryptionRound(whitened, key, i);
+            System.out.println("R"+ (i + 1) + ":");
+            if(i % 2 != 0) {
+                printInternal(whitened);
+            }
+            if (i != 0) {
+                whitened = new int[] {whitened[2], whitened[3], whitened[0], whitened[1]};
+            }
+            if(i % 2 == 0) {
+                printInternal(whitened);
+            }
         }
-        whitened = whitening(whitened, key, roundKey01[0], roundKey01[1], roundKey23[0], roundKey23[1]);
+        whitened = whitening(whitened, roundKey01[0], roundKey01[1], roundKey23[0], roundKey23[1]);
         return whitened;
 
     }
 
-    public static int[] whitening(int[] plainText, int[] key, int k0, int k1, int k2, int k3) {
-        if(plainText.length != 4) {
-            throw new IllegalArgumentException("plainText cannot have length != 4");
-        }
-        if(key.length != 4) {
-            throw new IllegalArgumentException("key cannot have length != 4");
-        }
-
+    public static int[] whitening(int[] plainText, int k0, int k1, int k2, int k3) {
         return new int[] {
                 plainText[0] ^ k0,
                 plainText[1] ^ k1,
@@ -79,46 +109,40 @@ public class Program {
 
     public static int[] encryptionRound(int[] input, int[] key, int round) {
         final int[] s = getS(key);
-        int t0 = h(input[0], s[0], s[1]);
-        int t1 = h(ROL(input[1], 8), s[0], s[1]);
+        int t0 = h(input[0],                        s[1], s[0]);
+        int t1 = h(Integer.rotateLeft(input[1], 8), s[1], s[0]);
         int[] pPht = pht(t0, t1);
         final int[] roundKeys2r_8_2r_9 = roundKeys(key, round + 4);
         //
-        final int f0 = pPht[0] ^ roundKeys2r_8_2r_9[0];
-        final int f1 = pPht[1] ^ roundKeys2r_8_2r_9[1];
+        final int f0 = pPht[0] + roundKeys2r_8_2r_9[0];
+        final int f1 = pPht[1] + roundKeys2r_8_2r_9[1];
         //
         int c2 = Integer.rotateRight((f0 ^ input[2]), 1);
-        int c3 = (f1 ^ ROL(input[3], 1));
+        int c3 = (f1 ^ Integer.rotateLeft(input[3], 1));
         //
-        return new int[] {c2, c3, f0, f1};
+        return new int[] { input[0], input[1], c2, c3 };
     }
 
     public static int[] decryptionRound(int[] input, int[] key, int round) {
         final int[] s = getS(key);
-        int t0 = h(input[0], s[0], s[1]);
-        int t1 = h(ROL(input[1], 8), s[0], s[1]);
+        int t0 = h(input[0],                        s[1], s[0]);
+        int t1 = h(Integer.rotateRight(input[1], 8), s[1], s[0]);
         final int[] pPht = pht(t0, t1);
         final int[] roundKeys = roundKeys(key, round + 4);
         //
         final int f0 = pPht[0] ^ roundKeys[0];
         final int f1 = pPht[1] ^ roundKeys[1];
         //
-        final int p2 = ROL(f0 ^ input[2], 1);
+        final int p2 = Integer.rotateLeft(f0 ^ input[2], 1);
         final int p3 = (f1 ^ Integer.rotateRight(input[3], 1));
         //
         return new int[] {p2, p3, f0, f1};
 
     }
 
-    private static int ROL(int value, int positions) {
-        return Integer.rotateLeft(value, positions);
-    }
-
     public static int[] pht(int a, int b) {
-        final long unsignedA = (long) a & 0xFFFFFFFFL;
-        final long unsignedB = (long) b & 0xFFFFFFFFL;
-        int a1 = (int)(unsignedA + unsignedB);
-        int b1 = (int)(unsignedA + 2 * unsignedB);
+        int a1 = a + b;
+        int b1 = (a + 2 * b);
         return new int[] {a1, b1};
     }
 
@@ -128,10 +152,10 @@ public class Program {
         final byte[] y = asBytes(l1);
         final byte[] z = asBytes(l0);
         final byte[] input11 = new byte[] {
-            q1((byte)(q0((byte) (q0(x[0]) ^ y[0])) ^ z[0])),
-            q0((byte)(q0((byte) (q1(x[1]) ^ y[1])) ^ z[1])),
-            q1((byte)(q1((byte) (q0(x[2]) ^ y[2])) ^ z[2])),
-            q0((byte)(q1((byte) (q1(x[3]) ^ y[3])) ^ z[3])),
+            q1((byte) (q0((byte) (q0(x[0]) ^ y[0])) ^ z[0])),
+            q0((byte) (q0((byte) (q1(x[1]) ^ y[1])) ^ z[1])),
+            q1((byte) (q1((byte) (q0(x[2]) ^ y[2])) ^ z[2])),
+            q0((byte) (q1((byte) (q1(x[3]) ^ y[3])) ^ z[3])),
         };
         return fromBytes(multiply(galua256, MDS, input11));
     }
@@ -195,7 +219,7 @@ public class Program {
         final int m3 = key[3];
         final int S0 = RS(m0, m1);
         final int S1 = RS(m2, m3);
-        return new int[] {S0, S1};
+        return new int[] { S0, S1};
     }
 
     private static int RS(int X, int Y) {
@@ -236,10 +260,10 @@ public class Program {
         //
         final int rho = (1 << 24) | (1 << 16) | (1 << 8) | 1;
         final int Ai = h(2 * round * rho, Me[0], Me[1]);
-        final int Bi = ROL(h((2 * round + 1) * rho, Mo[0], Mo[1]), 8);
+        final int Bi = Integer.rotateLeft(h((2 * round + 1) * rho, Mo[0], Mo[1]), 8);
         final int[] pPht = pht(Ai, Bi);
         final int K2i = pPht[0];
-        final int K2i_1 = ROL(pPht[1], 9);
+        final int K2i_1 = Integer.rotateLeft(pPht[1], 9);
         return new int[] { K2i, K2i_1};
     }
 
