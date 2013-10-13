@@ -27,7 +27,7 @@ public class Program {
         Utils.printInput(decrypted);
         //
 
-        System.out.println("Hash");
+        System.out.println("Hash:");
         String message1 = "Hello, world, this is Timur";
         String message2 = "Hello, world, this is Timur ";
         String message3 = "Hello, world, this is Timus";

@@ -37,8 +37,8 @@ public class TwoFish {
         int[] whitened = whitening(plainText, roundKey01[0], roundKey01[1], roundKey23[0], roundKey23[1]);
         //
         if(debug) {
-        System.out.println("whitened:");
-        Utils.printInternal(whitened);
+            System.out.println("whitened:");
+            Utils.printInternal(whitened);
         }
         //
         for(int i = 0; i < 16; i++) {
@@ -61,34 +61,45 @@ public class TwoFish {
         return whitened;
     }
 
-
     public static int[] decrypt(int[] cypheredText, int[] key) {
-        System.out.println("Cyphered text:");
-        Utils.printInput(cypheredText);
+        return decrypt(cypheredText, key, false);
+    }
+
+    public static int[] decrypt(int[] cypheredText, int[] key, boolean debug) {
+        if(debug) {
+            System.out.println("Cyphered text:");
+            Utils.printInput(cypheredText);
+        }
         final int[] roundKey01 = roundKeys(key, 0);
         final int[] roundKey23 = roundKeys(key, 1);
         final int[] roundKey45 = roundKeys(key, 2);
         final int[] roundKey67 = roundKeys(key, 3);
         // whitening
         int[] whitened = whitening(cypheredText, roundKey45[0], roundKey45[1], roundKey67[0], roundKey67[1]);
-        System.out.println("Whitened:");
-        Utils.printInternal(whitened);
+        if(debug) {
+            System.out.println("Whitened:");
+            Utils.printInternal(whitened);
+        }
         //
         whitened = new int[] {whitened[2], whitened[3], whitened[0], whitened[1]};
         for(int i = 15; i >= 0; i--) {
             whitened = decryptionRound(whitened, key, i);
-            System.out.println("R"+ (i + 1) + ":");
-            if(i % 2 == 0) {
-                Utils.printInternal(whitened);
+            if(debug) {
+                System.out.println("R"+ (i + 1) + ":");
+                if(i % 2 == 0) {
+                    Utils.printInternal(whitened);
+                }
             }
             whitened = new int[] {whitened[2], whitened[3], whitened[0], whitened[1]};
-            if(i % 2 != 0) {
+            if(debug && i % 2 != 0) {
                 Utils.printInternal(whitened);
             }
         }
         whitened = whitening(whitened, roundKey01[0], roundKey01[1], roundKey23[0], roundKey23[1]);
+        if(debug) {
         System.out.println("Whitened:");
         Utils.printInternal(whitened);
+        }
         return whitened;
 
     }
