@@ -15,7 +15,7 @@ public abstract class Hasher {
     public static byte[] hash(byte[] message) {
         int[] h = h0;
         for(int i = 0; i < message.length; i+=length) {
-            final int[] Mi = convertInput(message, i, length);
+            final int[] Mi = convertInput(message, i);
             final int[] A = new int[] { Mi[0] ^ h[0], Mi[1] ^ h[1], Mi[2] ^ h[2], Mi[3] ^ h[3]};
             final int[] B = h;
             final int[] C = Mi;
@@ -25,13 +25,19 @@ public abstract class Hasher {
         byte[] result = new byte[16];
         for(int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
-                result[i*4+j] = (byte)(h[i] >>> 8 * j);
+                result[i*4+j] = (byte) (h[i] >>> (8 * j));
             }
         }
         return result;
     }
 
-    public static int[] convertInput(byte[] input, int offset, int length) {
+    /**
+     * Берет 16 байт указанного текста начиная с указанной позиции и возвращает их как 4 32битных слова
+     * @param input
+     * @param offset
+     * @return
+     */
+    public static int[] convertInput(byte[] input, int offset) {
         int[] result = new int[4];
         for(int i = 0; i < 4; i++) {
             int temp = 0;
@@ -41,7 +47,7 @@ public abstract class Hasher {
                     //Забиваем конец 0
                     temp |= 0;
                 } else {
-                    temp |= (input[index] << (8 * j));
+                    temp |= ((0xFF & input[index]) << (8 * j));
                 }
             }
             result[i] = temp;
