@@ -1,3 +1,12 @@
+<<<<<<< HEAD
 .idea
 target
 *.iml
+=======
+*.class
+
+# Package Files #
+*.jar
+*.war
+*.ear
+>>>>>>> 2d4f6a5ba22910be2911dd7f31dff8501151af08
