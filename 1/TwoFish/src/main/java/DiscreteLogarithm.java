@@ -6,9 +6,10 @@ import java.util.Random;
  */
 public class DiscreteLogarithm {
     private static final Random R = new Random();
+    public static final int BIT_LENGTH = 128;
 
     public static BigInteger[] getPQGYX() {
-        BigInteger q = BigInteger.probablePrime(256, R);
+        BigInteger q = BigInteger.probablePrime(BIT_LENGTH, R);
         BigInteger p = q.add(BigInteger.ONE);
         do {
             p = p.add(q);
@@ -39,10 +40,11 @@ public class DiscreteLogarithm {
         assert y.equals(g.modPow(x, p));
         //
         BigInteger h = new BigInteger(hash);
+        System.out.println("h.bigLength() " + h.bitLength());
         //
         BigInteger k;
         do {
-            k = BigInteger.probablePrime(256, R);
+            k = new BigInteger(q.bitLength(), R);
         // k >=q
         } while (k.compareTo(q) >= 0 || k.compareTo(BigInteger.ZERO) <= 0);
         System.out.println("k = " + k);
@@ -50,13 +52,6 @@ public class DiscreteLogarithm {
         final BigInteger r = g.modPow(k, p);
         final BigInteger rho = r.mod(q);
         final BigInteger s = k.subtract(rho.multiply(h).multiply(x)).mod(q);
-        assert s.compareTo(BigInteger.ZERO) >= 0;
-        //
-        assert k.compareTo(s.add(rho.multiply(h).multiply(x)).mod(q)) == 0;
-        System.out.println("r = "+ r.mod(q));
-        final BigInteger right = g.modPow(s, p).multiply(y.modPow(rho.multiply(h), p)).mod(q);
-        System.out.println("r = "+ right);
-        assert r.equals(right);
         //
         return new BigInteger[] {r, s};
     }
@@ -68,7 +63,7 @@ public class DiscreteLogarithm {
         BigInteger s = sign[1];
         BigInteger rho = r.mod(q);
         System.out.println(r);
-        final BigInteger test = g.modPow(s, p).multiply(y.modPow(rho.multiply(h), p)).mod(q);
+        final BigInteger test = g.modPow(s, p).multiply(y.modPow(rho.multiply(h), p)).mod(p);
         System.out.println(test);
         return r.equals(test);
     }
