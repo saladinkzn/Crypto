@@ -29,6 +29,9 @@ public class TestWithGeneratedKeys {
         BigInteger g = dsaParams.getG();
         BigInteger x = privateKey.getX();
         BigInteger y = publicKey.getY();
+        final BigInteger divide = p.subtract(BigInteger.ONE).divide(q);
+        System.out.println(divide);
+        //
         System.out.println(p);
         System.out.println(q);
         System.out.println(g);

@@ -10,10 +10,11 @@ public class DiscreteLogarithm {
 
     public static BigInteger[] getPQGYX() {
         BigInteger q = BigInteger.probablePrime(BIT_LENGTH, R);
-        BigInteger p = q.add(BigInteger.ONE);
+        final BigInteger multiply = q.multiply(new BigInteger(512 - BIT_LENGTH, R));
+        BigInteger p = multiply.add(BigInteger.ONE);
         do {
             p = p.add(q);
-        } while (!(p.subtract(BigInteger.ONE)).remainder(q).equals(BigInteger.ZERO));
+        } while (!p.isProbablePrime(20) || !(p.subtract(BigInteger.ONE)).remainder(q).equals(BigInteger.ZERO));
         BigInteger phi;
         do {
             phi = new BigInteger(p.bitLength(), R);
