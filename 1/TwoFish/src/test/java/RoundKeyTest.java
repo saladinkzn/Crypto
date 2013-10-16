@@ -1,3 +1,4 @@
+import galua.Galua256;
 import org.junit.Test;
 
 /**
