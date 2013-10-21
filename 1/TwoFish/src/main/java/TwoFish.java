@@ -1,3 +1,5 @@
+import galua.Galua256;
+
 /**
  * @author sala
  */
