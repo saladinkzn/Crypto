@@ -50,7 +50,7 @@ public class DiscreteLogarithm {
         } while (k.compareTo(q) >= 0 || k.compareTo(BigInteger.ZERO) <= 0);
         System.out.println("k = " + k);
         System.out.println();
-        final BigInteger r = g.modPow(k, p);
+        final BigInteger r = g.modPow(k, p).mod(q);
         final BigInteger rho = r.mod(q);
         final BigInteger s = k.subtract(rho.multiply(h).multiply(x)).mod(q);
         //
@@ -65,7 +65,7 @@ public class DiscreteLogarithm {
         BigInteger rho = r.mod(q);
         System.out.println(r);
         final BigInteger test = g.modPow(s, p).multiply(y.modPow(rho.multiply(h), p)).mod(p);
-        System.out.println(test);
-        return r.equals(test);
+        System.out.println(test.mod(q));
+        return r.mod(q).equals(test.mod(q));
     }
 }
