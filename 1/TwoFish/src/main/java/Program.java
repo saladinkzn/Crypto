@@ -18,7 +18,7 @@ public class Program {
         //
         int[] encrypted = TwoFish.encrypt(p, key);
         //
-        System.out.println("Encrypted:");;
+        System.out.println("Encrypted:");
         Utils.printInput(encrypted);
         System.out.println();
 
