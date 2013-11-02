@@ -52,9 +52,10 @@ public class BlockProgram {
         final byte[] rTemp = sign[0].toByteArray();
         final byte[] sTemp = sign[1].toByteArray();
         //
-        final byte[] rArr = rTemp[0] == 0 ? Arrays.copyOfRange(rTemp, 1, rTemp.length + 1) : rTemp;
-        final byte[] sArr = sTemp[0] == 0 ? Arrays.copyOfRange(sTemp, 1, sTemp.length + 1) : sTemp;
+        final byte[] rArr = rTemp[0] == 0 ? Arrays.copyOfRange(rTemp, 1, rTemp.length) : rTemp;
+        final byte[] sArr = sTemp[0] == 0 ? Arrays.copyOfRange(sTemp, 1, sTemp.length) : sTemp;
         //
+        System.out.println("Discrete size: ("+rTemp.length + " " + rArr.length + ", " + sTemp.length + " " + sArr.length+")");
         System.out.println("Discrete sign: ("+sign[0]+", "+sign[1]+")");
         //
         EllipticCurve E = new EllipticCurve(a, b, p);
@@ -104,8 +105,12 @@ public class BlockProgram {
         from -= 32;
         byte[] receivedRArray1 = Arrays.copyOfRange(receivedBytes, from, from + 32);
         //
-        final BigInteger r1 = new BigInteger(receivedRArray1);
-        final BigInteger s1 = new BigInteger(receivedSArray1);
+        byte[] _r1 = new byte[receivedRArray1.length + 1],
+               _s1 = new byte[receivedSArray1.length + 1];
+        System.arraycopy(receivedRArray1, 0, _r1, 1, receivedRArray1.length);
+        System.arraycopy(receivedSArray1, 0, _s1, 1, receivedSArray1.length);
+        final BigInteger r1 = new BigInteger(_r1);
+        final BigInteger s1 = new BigInteger(_s1);
         //
         final BigInteger r2 = new BigInteger(receivedRArray2);
         final BigInteger s2 = new BigInteger(receivedSArray2);
@@ -114,6 +119,8 @@ public class BlockProgram {
         final byte[] hashOfReceived = Hasher.hash(receivedMessage);
         System.out.println("Hash:");
         printLineByteArray(hashOfReceived);
+        System.out.println("Obtained:");
+        System.out.println("Discrete sign: (" + r1 + ", " + s1 + ")");
         System.out.println("Verifying discrete sign: ");
         System.out.println(DiscreteLogarithm.verify(hashOfReceived, new BigInteger[]{r1, s1}, pqgyx[0], pqgyx[2], pqgyx[1], pqgyx[3]));
         System.out.println("Verifying elliptic sign: ");
